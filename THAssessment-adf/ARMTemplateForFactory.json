@@ -1034,6 +1034,59 @@
 								}
 							}
 						}
+					},
+					{
+						"name": "Log Pipeline End Failure After Silver Ingestion",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Execute pl_mysql_silver_to_gold",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+							"baseParameters": {
+								"loadId": {
+									"value": "@pipeline().RunId",
+									"type": "Expression"
+								},
+								"logTimeStamp": {
+									"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+									"type": "Expression"
+								},
+								"status": {
+									"value": "FAILED!!!",
+									"type": "Expression"
+								},
+								"logMessage": {
+									"value": "@concat('PIPELINE ENDED! Failed before GOLD ingestion.')",
+									"type": "Expression"
+								},
+								"pipeLineName": {
+									"value": "@pipeline().Pipeline",
+									"type": "Expression"
+								},
+								"triggerType": {
+									"value": "@pipeline().TriggerType",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_databricks",
+							"type": "LinkedServiceReference"
+						}
 					}
 				],
 				"policy": {
