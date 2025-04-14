@@ -564,6 +564,10 @@
 								"gold_schema": {
 									"value": "@pipeline().parameters.metadata_values.gold_schema",
 									"type": "Expression"
+								},
+								"storage_account_name": {
+									"value": "@pipeline().parameters.metadata_values.storage_account_name",
+									"type": "Expression"
 								}
 							}
 						},
