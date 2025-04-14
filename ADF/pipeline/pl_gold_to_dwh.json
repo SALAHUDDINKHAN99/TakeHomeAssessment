@@ -125,6 +125,30 @@
 										"sf_tablename": {
 											"value": "@toUpper(item().name)",
 											"type": "Expression"
+										},
+										"Account_name": {
+											"value": "@pipeline().parameters.metadata_values.sf_account_name",
+											"type": "Expression"
+										},
+										"Database": {
+											"value": "@pipeline().parameters.metadata_values.sf_database_name",
+											"type": "Expression"
+										},
+										"Warehouse": {
+											"value": "@pipeline().parameters.metadata_values.sf_warehouse_name",
+											"type": "Expression"
+										},
+										"User_name": {
+											"value": "@pipeline().parameters.metadata_values.sf_user_name",
+											"type": "Expression"
+										},
+										"Secret_name": {
+											"value": "@pipeline().parameters.metadata_values.sf_password",
+											"type": "Expression"
+										},
+										"Role": {
+											"value": "@pipeline().parameters.metadata_values.sf_role",
+											"type": "Expression"
 										}
 									}
 								}
