@@ -1,0 +1,9 @@
+{
+	"name": "THAssessment-adf",
+	"location": "centralindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "1ad7924e-f908-4370-84cc-aad9103aaa32",
+		"tenantId": "795a41d3-e553-414c-9ddc-947bcd9d0eb2"
+	}
+}

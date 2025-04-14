@@ -1,0 +1,69 @@
+{
+	"name": "ds_snowflake",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_snowflake",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"Account_name": {
+					"value": "@dataset().Account_name",
+					"type": "Expression"
+				},
+				"Database": {
+					"value": "@dataset().Database",
+					"type": "Expression"
+				},
+				"Warehouse": {
+					"value": "@dataset().Warehouse",
+					"type": "Expression"
+				},
+				"User_name": {
+					"value": "@dataset().User_name",
+					"type": "Expression"
+				},
+				"Secret_name": {
+					"value": "@dataset().Secret_name",
+					"type": "Expression"
+				},
+				"Role": {
+					"value": "@dataset().Role",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"Account_name": {
+				"type": "string",
+				"defaultValue": "cz75514.uae-north.azure"
+			},
+			"Database": {
+				"type": "string",
+				"defaultValue": "parch_and_posey"
+			},
+			"Warehouse": {
+				"type": "string",
+				"defaultValue": "THASSESSMENT_WH"
+			},
+			"User_name": {
+				"type": "string",
+				"defaultValue": "SALAHKHAN"
+			},
+			"Secret_name": {
+				"type": "string",
+				"defaultValue": "sf-password"
+			},
+			"Role": {
+				"type": "string",
+				"defaultValue": "ACCOUNTADMIN"
+			}
+		},
+		"annotations": [],
+		"type": "SnowflakeV2Table",
+		"schema": [],
+		"typeProperties": {
+			"schema": "THA",
+			"table": "ORDERS"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

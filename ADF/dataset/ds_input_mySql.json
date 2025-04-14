@@ -1,0 +1,57 @@
+{
+	"name": "ds_input_mySql",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_mySql",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"Server_name": {
+					"value": "@dataset().Server_name",
+					"type": "Expression"
+				},
+				"Port": {
+					"value": "@dataset().Port",
+					"type": "Expression"
+				},
+				"Database_name": {
+					"value": "@dataset().Database_name",
+					"type": "Expression"
+				},
+				"User_name": {
+					"value": "@dataset().User_name",
+					"type": "Expression"
+				},
+				"Secret_name": {
+					"value": "@dataset().Secret_name",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"Server_name": {
+				"type": "string",
+				"defaultValue": "localhost"
+			},
+			"Port": {
+				"type": "string",
+				"defaultValue": "3306"
+			},
+			"Database_name": {
+				"type": "string",
+				"defaultValue": "parch_and_posey"
+			},
+			"User_name": {
+				"type": "string",
+				"defaultValue": "root"
+			},
+			"Secret_name": {
+				"type": "string",
+				"defaultValue": "mysql-password"
+			}
+		},
+		"annotations": [],
+		"type": "MySqlTable",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

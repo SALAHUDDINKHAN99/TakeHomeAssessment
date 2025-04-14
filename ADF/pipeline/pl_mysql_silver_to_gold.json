@@ -1,0 +1,148 @@
+{
+	"name": "pl_mysql_silver_to_gold",
+	"properties": {
+		"activities": [
+			{
+				"name": "Silver To Gold Ingestion Notebook",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/DatabricksNotebooks/Ingestion&Archive_Notebooks/silver_to_gold_ingestion_script",
+					"baseParameters": {
+						"silver_schema": {
+							"value": "@pipeline().parameters.metadata_values.silver_schema",
+							"type": "Expression"
+						},
+						"gold_schema": {
+							"value": "@pipeline().parameters.metadata_values.gold_schema",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Log Gold Ingestion Failure",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Silver To Gold Ingestion Notebook",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+					"baseParameters": {
+						"loadId": {
+							"value": "@pipeline()?.TriggeredByPipelineRunId",
+							"type": "Expression"
+						},
+						"logTimeStamp": {
+							"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+							"type": "Expression"
+						},
+						"status": {
+							"value": "@concat('ERROR : ',activity('Silver To Gold Ingestion Notebook').Error.message)\n\n",
+							"type": "Expression"
+						},
+						"logMessage": {
+							"value": "@concat('Failed to create denormalized reporting ready tables in GOLD layer.')",
+							"type": "Expression"
+						},
+						"pipeLineName": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"triggerType": {
+							"value": "@pipeline().TriggerType",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Log Gold Ingestion Success",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Silver To Gold Ingestion Notebook",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+					"baseParameters": {
+						"loadId": {
+							"value": "@pipeline()?.TriggeredByPipelineRunId",
+							"type": "Expression"
+						},
+						"logTimeStamp": {
+							"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+							"type": "Expression"
+						},
+						"status": "Success!",
+						"logMessage": {
+							"value": "@concat('Successfully created denormalized reporting ready tables ',activity('Silver To Gold Ingestion Notebook').output.runOutput[0],' and ',activity('Silver To Gold Ingestion Notebook').output.runOutput[1],' in GOLD layer.')",
+							"type": "Expression"
+						},
+						"pipeLineName": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"triggerType": {
+							"value": "@pipeline().TriggerType",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"metadata_values": {
+				"type": "object"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-04-14T12:14:15Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

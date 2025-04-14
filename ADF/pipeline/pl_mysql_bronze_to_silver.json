@@ -1,0 +1,160 @@
+{
+	"name": "pl_mysql_bronze_to_silver",
+	"properties": {
+		"activities": [
+			{
+				"name": "Bronze To Silver Ingestion Notebook",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/DatabricksNotebooks/Ingestion&Archive_Notebooks/bronze_to_silver_ingestion_script",
+					"baseParameters": {
+						"bronze_schema": {
+							"value": "@pipeline().parameters.metadata_values.bronze_schema",
+							"type": "Expression"
+						},
+						"bronze_tbl": {
+							"value": "@pipeline().parameters.metadata_values.bronze_tbl",
+							"type": "Expression"
+						},
+						"load_id": {
+							"value": "@pipeline()?.TriggeredByPipelineRunId\n",
+							"type": "Expression"
+						},
+						"silver_schema": {
+							"value": "@pipeline().parameters.metadata_values.silver_schema",
+							"type": "Expression"
+						},
+						"silver_tbl": {
+							"value": "@pipeline().parameters.metadata_values.silver_tbl",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Log Silver Ingestion Failure",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Bronze To Silver Ingestion Notebook",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+					"baseParameters": {
+						"loadId": {
+							"value": "@pipeline()?.TriggeredByPipelineRunId",
+							"type": "Expression"
+						},
+						"logTimeStamp": {
+							"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+							"type": "Expression"
+						},
+						"status": {
+							"value": "@concat('ERROR : ',activity('Bronze To Silver Ingestion Notebook').Error.message)\n\n",
+							"type": "Expression"
+						},
+						"logMessage": {
+							"value": "@concat('Failed to load records from bronze layer table ',pipeline().parameters.metadata_values.bronze_tbl,' into silver layer table ',pipeline().parameters.metadata_values.silver_tbl)",
+							"type": "Expression"
+						},
+						"pipeLineName": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"triggerType": {
+							"value": "@pipeline().TriggerType",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Log Silver Ingestion Success",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Bronze To Silver Ingestion Notebook",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+					"baseParameters": {
+						"loadId": {
+							"value": "@pipeline()?.TriggeredByPipelineRunId",
+							"type": "Expression"
+						},
+						"logTimeStamp": {
+							"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+							"type": "Expression"
+						},
+						"status": "Success!",
+						"logMessage": {
+							"value": "@concat('Successfully inserted ',activity('Bronze To Silver Ingestion Notebook').output.runOutput[1],' (',activity('Bronze To Silver Ingestion Notebook').output.runOutput[0],' duplicate records were found and removed) records in silver layer table ',pipeline().parameters.metadata_values.silver_tbl)",
+							"type": "Expression"
+						},
+						"pipeLineName": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"triggerType": {
+							"value": "@pipeline().TriggerType",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"metadata_values": {
+				"type": "object"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-04-14T06:51:10Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

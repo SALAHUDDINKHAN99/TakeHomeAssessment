@@ -1,0 +1,54 @@
+{
+	"name": "ls_mySql",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"parameters": {
+			"Server_name": {
+				"type": "string",
+				"defaultValue": "localhost"
+			},
+			"Port": {
+				"type": "string",
+				"defaultValue": "3306"
+			},
+			"Database_name": {
+				"type": "string",
+				"defaultValue": "parch_and_posey"
+			},
+			"User_name": {
+				"type": "string",
+				"defaultValue": "root"
+			},
+			"Secret_name": {
+				"type": "string",
+				"defaultValue": "mysql-password"
+			}
+		},
+		"annotations": [],
+		"type": "MySql",
+		"typeProperties": {
+			"server": "@{linkedService().Server_name}",
+			"port": "@{linkedService().Port}",
+			"database": "@{linkedService().Database_name}",
+			"username": "@{linkedService().User_name}",
+			"sslMode": 1,
+			"useSystemTrustStore": 0,
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "ls_keyVault",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": {
+					"value": "@linkedService().Secret_name",
+					"type": "Expression"
+				}
+			},
+			"driverVersion": "v2"
+		},
+		"connectVia": {
+			"referenceName": "onPrem-IR",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

@@ -1,0 +1,685 @@
+{
+	"name": "pl_mysql",
+	"properties": {
+		"activities": [
+			{
+				"name": "LU_Get_Metadata",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureDatabricksDeltaLakeSource",
+						"query": {
+							"value": "@concat(\n  'SELECT so.source_ref, so.mysql_server_name, so.mysql_port, so.mysql_database_name, so.mysql_user_name, so.mysql_password ,so.container_name, so.adls_url, so.sf_account_name, so.sf_database_name, so.sf_warehouse_name, so.sf_user_name, so.sf_password, so.sf_role, so.logic_app_url, so.email_id, so.storage_account_name, si.source_table_name,si.sink_directory,si.bronze_schema,si.bronze_tbl,si.silver_schema,si.silver_tbl,si.gold_schema FROM ',\n  pipeline().parameters.metadata_schema,\n  '.tbl_source_parameters so JOIN ',\n  pipeline().parameters.metadata_schema,\n  '.tbl_sink_parameters si ON so.source_ref = si.source_ref WHERE so.source_ref = ''',\n  pipeline().parameters.source_ref,\n  ''''\n)\n",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "ds_metadata_deltaLake",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach Table",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "LU_Get_Metadata",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('LU_Get_Metadata').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Copy mysql tables to Landing",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 2,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "MySqlSource",
+									"query": {
+										"value": "@concat('SELECT * FROM ',item().source_table_name)",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "ParquetSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "ParquetWriteSettings"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_input_mySql",
+									"type": "DatasetReference",
+									"parameters": {
+										"Server_name": {
+											"value": "@item().mysql_server_name",
+											"type": "Expression"
+										},
+										"Port": {
+											"value": "@item().mysql_port",
+											"type": "Expression"
+										},
+										"Database_name": {
+											"value": "@item().mysql_database_name",
+											"type": "Expression"
+										},
+										"User_name": {
+											"value": "@item().mysql_user_name",
+											"type": "Expression"
+										},
+										"Secret_name": {
+											"value": "@item().mysql_password",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_output_adls_parquet",
+									"type": "DatasetReference",
+									"parameters": {
+										"container_name": {
+											"value": "@item().container_name",
+											"type": "Expression"
+										},
+										"folder_name": {
+											"value": "@item().sink_directory",
+											"type": "Expression"
+										},
+										"file_name": {
+											"value": "@item().source_table_name",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "Log Copy Tables to Landing Success",
+							"type": "DatabricksNotebook",
+							"dependsOn": [
+								{
+									"activity": "Copy mysql tables to Landing",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+								"baseParameters": {
+									"loadId": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"logTimeStamp": {
+										"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+										"type": "Expression"
+									},
+									"status": "Success!",
+									"logMessage": {
+										"value": "@concat('Successfully copied table ',item().source_table_name,' from source to ADLS ',item().container_name,' container.')",
+										"type": "Expression"
+									},
+									"pipeLineName": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"triggerType": {
+										"value": "@pipeline().TriggerType",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_databricks",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Log Copy Tables to Landing Failure",
+							"type": "DatabricksNotebook",
+							"dependsOn": [
+								{
+									"activity": "Copy mysql tables to Landing",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+								"baseParameters": {
+									"loadId": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"logTimeStamp": {
+										"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+										"type": "Expression"
+									},
+									"status": {
+										"value": "@concat('ERROR : ',activity('Copy mysql tables to Landing').Error.message)",
+										"type": "Expression"
+									},
+									"logMessage": {
+										"value": "@concat('Failed to copy table ',item().source_table_name,' from source to ADLS ',item().container_name,' container.')",
+										"type": "Expression"
+									},
+									"pipeLineName": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"triggerType": {
+										"value": "@pipeline().TriggerType",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_databricks",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Comparing source and landing records",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "Copy mysql tables to Landing",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@equals(activity('Copy mysql tables to Landing').output.rowsRead\n, activity('Copy mysql tables to Landing').output.rowsCopied)\n\n",
+									"type": "Expression"
+								},
+								"ifFalseActivities": [
+									{
+										"name": "Log Records Mismatch",
+										"type": "DatabricksNotebook",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+											"baseParameters": {
+												"loadId": {
+													"value": "@pipeline().RunId",
+													"type": "Expression"
+												},
+												"logTimeStamp": {
+													"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+													"type": "Expression"
+												},
+												"status": {
+													"value": "Success! Records Mismatch",
+													"type": "Expression"
+												},
+												"logMessage": {
+													"value": "@concat(string(sub(int(activity('Copy mysql tables to Landing').output.rowsRead), int(activity('Copy mysql tables to Landing').output.rowsCopied))),' records were not copied from ',item().source_table_name,' table in MySQL source to ',item().container_name,' container in ADLS.')",
+													"type": "Expression"
+												},
+												"pipeLineName": {
+													"value": "@pipeline().Pipeline",
+													"type": "Expression"
+												},
+												"triggerType": {
+													"value": "@pipeline().TriggerType",
+													"type": "Expression"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "ls_databricks",
+											"type": "LinkedServiceReference"
+										}
+									},
+									{
+										"name": "Fail file ingestion",
+										"type": "Fail",
+										"dependsOn": [
+											{
+												"activity": "Log Records Mismatch",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"userProperties": [],
+										"typeProperties": {
+											"message": {
+												"value": "@concat(string(sub(int(activity('Copy mysql tables to Landing').output.rowsRead), int(activity('Copy mysql tables to Landing').output.rowsCopied))),' records were not copied from ',item().source_table_name,' table in MySQL source to ',item().container_name,' container in ADLS.')",
+												"type": "Expression"
+											},
+											"errorCode": "101 - Records Mismatch"
+										}
+									}
+								]
+							}
+						},
+						{
+							"name": "Execute pl_mysql_landing_to_bronze",
+							"type": "ExecutePipeline",
+							"dependsOn": [
+								{
+									"activity": "Comparing source and landing records",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_mysql_landing_to_bronze",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"metadata_values": {
+										"value": "@item()",
+										"type": "Expression"
+									}
+								}
+							}
+						},
+						{
+							"name": "Archive Source Files Notebook",
+							"type": "DatabricksNotebook",
+							"dependsOn": [
+								{
+									"activity": "Execute pl_mysql_landing_to_bronze",
+									"dependencyConditions": [
+										"Completed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/DatabricksNotebooks/Ingestion&Archive_Notebooks/archive_source_files_notebook",
+								"baseParameters": {
+									"load_id": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"sink_directory": {
+										"value": "@item().sink_directory",
+										"type": "Expression"
+									},
+									"source_table_name": {
+										"value": "@item().source_table_name",
+										"type": "Expression"
+									},
+									"storage_account_name": {
+										"value": "@item().storage_account_name",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_databricks",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Log Archive Source Files Success",
+							"type": "DatabricksNotebook",
+							"dependsOn": [
+								{
+									"activity": "Archive Source Files Notebook",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+								"baseParameters": {
+									"loadId": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"logTimeStamp": {
+										"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+										"type": "Expression"
+									},
+									"status": "Success!",
+									"logMessage": {
+										"value": "@concat('Successfully archived source file ',item().source_table_name)",
+										"type": "Expression"
+									},
+									"pipeLineName": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"triggerType": {
+										"value": "@pipeline().TriggerType",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_databricks",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Log Archive Source Files Failure",
+							"type": "DatabricksNotebook",
+							"dependsOn": [
+								{
+									"activity": "Archive Source Files Notebook",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+								"baseParameters": {
+									"loadId": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"logTimeStamp": {
+										"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+										"type": "Expression"
+									},
+									"status": {
+										"value": "@concat('ERROR : ',activity('Archive Source Files Notebook').Error.message)\n\n",
+										"type": "Expression"
+									},
+									"logMessage": {
+										"value": "@concat('Failed to archive source file ',item().source_table_name)",
+										"type": "Expression"
+									},
+									"pipeLineName": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"triggerType": {
+										"value": "@pipeline().TriggerType",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_databricks",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Execute pl_mysql_bronze_to_silver",
+							"type": "ExecutePipeline",
+							"dependsOn": [
+								{
+									"activity": "Execute pl_mysql_landing_to_bronze",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_mysql_bronze_to_silver",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"metadata_values": {
+										"value": "@item()",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Execute pl_mysql_silver_to_gold",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "ForEach Table",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_mysql_silver_to_gold",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"metadata_values": {
+							"value": "@activity('LU_Get_Metadata').output.value[0]",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Log Pipeline End Success",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Execute pl_mysql_silver_to_gold",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+					"baseParameters": {
+						"loadId": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"logTimeStamp": {
+							"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+							"type": "Expression"
+						},
+						"status": "SUCCESS!!!",
+						"logMessage": {
+							"value": "@concat('PIPELINE ENDED!')",
+							"type": "Expression"
+						},
+						"pipeLineName": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"triggerType": {
+							"value": "@pipeline().TriggerType",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Log Pipeline End Failure",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Execute pl_mysql_silver_to_gold",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+					"baseParameters": {
+						"loadId": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"logTimeStamp": {
+							"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+							"type": "Expression"
+						},
+						"status": {
+							"value": "FAILED!!!",
+							"type": "Expression"
+						},
+						"logMessage": {
+							"value": "@concat('PIPELINE ENDED!')",
+							"type": "Expression"
+						},
+						"pipeLineName": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"triggerType": {
+							"value": "@pipeline().TriggerType",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"metadata_schema": {
+				"type": "string",
+				"defaultValue": "metadatadb"
+			},
+			"source_ref": {
+				"type": "string",
+				"defaultValue": "MySQL-onPrem"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-04-14T12:26:35Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,226 @@
+{
+	"name": "pl_mysql_landing_to_bronze",
+	"properties": {
+		"activities": [
+			{
+				"name": "Landing to Bronze Ingestion Notebook",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/DatabricksNotebooks/Ingestion&Archive_Notebooks/landing_to_bronze_ingestion_script",
+					"baseParameters": {
+						"bronze_schema": {
+							"value": "@pipeline().parameters.metadata_values.bronze_schema",
+							"type": "Expression"
+						},
+						"bronze_tbl": {
+							"value": "@pipeline().parameters.metadata_values.bronze_tbl",
+							"type": "Expression"
+						},
+						"last_insert_dttm": {
+							"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+							"type": "Expression"
+						},
+						"load_id": {
+							"value": "@pipeline()?.TriggeredByPipelineRunId\n",
+							"type": "Expression"
+						},
+						"source_table_name": {
+							"value": "@pipeline().parameters.metadata_values.source_table_name",
+							"type": "Expression"
+						},
+						"storage_account_name": {
+							"value": "@pipeline().parameters.metadata_values.storage_account_name",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "compare bronze layer record count",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Landing to Bronze Ingestion Notebook",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(activity('Landing to Bronze Ingestion Notebook').output.runOutput[0],activity('Landing to Bronze Ingestion Notebook').output.runOutput[1] )",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "Log Records Mismatch Bronze Layer",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+								"baseParameters": {
+									"loadId": {
+										"value": "@pipeline()?.TriggeredByPipelineRunId",
+										"type": "Expression"
+									},
+									"logTimeStamp": {
+										"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+										"type": "Expression"
+									},
+									"status": {
+										"value": "Success! Records Mismatch",
+										"type": "Expression"
+									},
+									"logMessage": {
+										"value": "@concat('Records mismatch between source table ',pipeline().parameters.metadata_values.source_table_name,'  records and ingested records in bronze layer table ',pipeline().parameters.metadata_values.bronze_tbl)",
+										"type": "Expression"
+									},
+									"pipeLineName": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"triggerType": {
+										"value": "@pipeline().TriggerType",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_databricks",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "Log Copy Tables to Bronze Success",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+								"baseParameters": {
+									"loadId": {
+										"value": "@pipeline()?.TriggeredByPipelineRunId",
+										"type": "Expression"
+									},
+									"logTimeStamp": {
+										"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+										"type": "Expression"
+									},
+									"status": "Success!",
+									"logMessage": {
+										"value": "@concat('Successfully inserted ',activity('Landing to Bronze Ingestion Notebook').output.runOutput[1],' records into bronze layer table ',pipeline().parameters.metadata_values.bronze_tbl)",
+										"type": "Expression"
+									},
+									"pipeLineName": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"triggerType": {
+										"value": "@pipeline().TriggerType",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_databricks",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Log Copy Tables to Bronze Failure",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Landing to Bronze Ingestion Notebook",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+					"baseParameters": {
+						"loadId": {
+							"value": "@pipeline()?.TriggeredByPipelineRunId",
+							"type": "Expression"
+						},
+						"logTimeStamp": {
+							"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+							"type": "Expression"
+						},
+						"status": {
+							"value": "@concat('ERROR : ',activity('Landing to Bronze Ingestion Notebook').Error.message)\n\n",
+							"type": "Expression"
+						},
+						"logMessage": {
+							"value": "@concat('Failed to copy source file ',pipeline().parameters.metadata_values.source_table_name,' from landing to bronze layer table ',pipeline().parameters.metadata_values.bronze_tbl)",
+							"type": "Expression"
+						},
+						"pipeLineName": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"triggerType": {
+							"value": "@pipeline().TriggerType",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"metadata_values": {
+				"type": "object"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-04-14T06:14:26Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
