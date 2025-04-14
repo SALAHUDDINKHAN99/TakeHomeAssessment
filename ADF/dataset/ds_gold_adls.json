@@ -5,20 +5,12 @@
 			"referenceName": "ls_adls",
 			"type": "LinkedServiceReference"
 		},
-		"parameters": {
-			"table_name": {
-				"type": "string"
-			}
-		},
 		"annotations": [],
 		"type": "Parquet",
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobFSLocation",
-				"fileName": {
-					"value": "@dataset().table_name",
-					"type": "Expression"
-				},
+				"folderPath": "top_customers_by_revenue_parquet",
 				"fileSystem": "gold"
 			},
 			"compressionCodec": "snappy"
