@@ -1,9 +1,9 @@
 {
-	"name": "pipeline4",
+	"name": "pl_gold_to_dwh",
 	"properties": {
 		"activities": [
 			{
-				"name": "Get Metadata1",
+				"name": "Get Gold Tables Metadata",
 				"type": "GetMetadata",
 				"dependsOn": [],
 				"policy": {
@@ -30,6 +30,7 @@
 					],
 					"storeSettings": {
 						"type": "AzureBlobFSReadSettings",
+						"recursive": true,
 						"enablePartitionDiscovery": false
 					},
 					"formatSettings": {
@@ -38,11 +39,11 @@
 				}
 			},
 			{
-				"name": "ForEach1",
+				"name": "ForEach Gold Table",
 				"type": "ForEach",
 				"dependsOn": [
 					{
-						"activity": "Get Metadata1",
+						"activity": "Get Gold Tables Metadata",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -51,13 +52,13 @@
 				"userProperties": [],
 				"typeProperties": {
 					"items": {
-						"value": "@activity('Get Metadata1').output.childItems",
+						"value": "@activity('Get Gold Tables Metadata').output.childItems\n",
 						"type": "Expression"
 					},
 					"isSequential": true,
 					"activities": [
 						{
-							"name": "Copy data1",
+							"name": "Copy Tables From Gold To DWH",
 							"type": "Copy",
 							"dependsOn": [],
 							"policy": {
@@ -74,6 +75,11 @@
 									"storeSettings": {
 										"type": "AzureBlobFSReadSettings",
 										"recursive": false,
+										"wildcardFolderPath": {
+											"value": "@item().name",
+											"type": "Expression"
+										},
+										"wildcardFileName": "*.parquet",
 										"enablePartitionDiscovery": false
 									},
 									"formatSettings": {
@@ -81,24 +87,22 @@
 									}
 								},
 								"sink": {
-									"type": "DelimitedTextSink",
-									"storeSettings": {
-										"type": "AzureBlobStorageWriteSettings"
+									"type": "SnowflakeV2Sink",
+									"preCopyScript": {
+										"value": "@concat('TRUNCATE TABLE THA.',toUpper(item().name))",
+										"type": "Expression"
 									},
-									"formatSettings": {
-										"type": "DelimitedTextWriteSettings",
-										"quoteAllText": true,
-										"fileExtension": ".txt"
+									"importSettings": {
+										"type": "SnowflakeImportCopyCommand"
 									}
 								},
-								"enableStaging": false,
-								"translator": {
-									"type": "TabularTranslator",
-									"typeConversion": true,
-									"typeConversionSettings": {
-										"allowDataTruncation": true,
-										"treatBooleanAsNumber": false
-									}
+								"enableStaging": true,
+								"stagingSettings": {
+									"linkedServiceName": {
+										"referenceName": "ls_blob",
+										"type": "LinkedServiceReference"
+									},
+									"path": "snowflake-staging"
 								}
 							},
 							"inputs": [
@@ -115,8 +119,14 @@
 							],
 							"outputs": [
 								{
-									"referenceName": "ds_csv_blob",
-									"type": "DatasetReference"
+									"referenceName": "ds_SnowflakeTable",
+									"type": "DatasetReference",
+									"parameters": {
+										"sf_tablename": {
+											"value": "@toUpper(item().name)",
+											"type": "Expression"
+										}
+									}
 								}
 							]
 						}
@@ -124,6 +134,11 @@
 				}
 			}
 		],
+		"parameters": {
+			"metadata_values": {
+				"type": "object"
+			}
+		},
 		"annotations": []
 	}
 }

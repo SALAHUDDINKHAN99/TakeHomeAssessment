@@ -569,7 +569,7 @@
 				"type": "DatabricksNotebook",
 				"dependsOn": [
 					{
-						"activity": "Execute pl_mysql_silver_to_gold",
+						"activity": "Execute pl_gold_to_dwh",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -619,7 +619,7 @@
 				"type": "DatabricksNotebook",
 				"dependsOn": [
 					{
-						"activity": "Execute pl_mysql_silver_to_gold",
+						"activity": "Execute pl_gold_to_dwh",
 						"dependencyConditions": [
 							"Failed"
 						]
@@ -668,7 +668,7 @@
 				}
 			},
 			{
-				"name": "Execute pl_gold_to_sf_dwh",
+				"name": "Execute pl_gold_to_dwh",
 				"type": "ExecutePipeline",
 				"dependsOn": [
 					{
@@ -684,7 +684,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"pipeline": {
-						"referenceName": "pl_gold_to_sf_dwh",
+						"referenceName": "pl_gold_to_dwh",
 						"type": "PipelineReference"
 					},
 					"waitOnCompletion": true,

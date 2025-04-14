@@ -1,0 +1,32 @@
+{
+	"name": "ds_SnowflakeTable",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_snowflake",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"Account_name": "cz75514.uae-north.azure",
+				"Database": "parch_and_posey",
+				"Warehouse": "THASSESSMENT_WH",
+				"User_name": "SALAHKHAN",
+				"Secret_name": "sf-password",
+				"Role": "ACCOUNTADMIN"
+			}
+		},
+		"parameters": {
+			"sf_tablename": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "SnowflakeV2Table",
+		"schema": [],
+		"typeProperties": {
+			"schema": "THA",
+			"table": {
+				"value": "@dataset().sf_tablename",
+				"type": "Expression"
+			}
+		}
+	}
+}
