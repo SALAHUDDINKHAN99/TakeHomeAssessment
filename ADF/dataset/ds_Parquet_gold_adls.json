@@ -1,0 +1,59 @@
+{
+	"name": "ds_Parquet_gold_adls",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"gold_container": {
+				"type": "string"
+			},
+			"gold_dir": {
+				"type": "string"
+			},
+			"gold_file_name": {
+				"type": "string",
+				"defaultValue": "*"
+			}
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().gold_file_name",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().gold_dir",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().gold_container",
+					"type": "Expression"
+				}
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": [
+			{
+				"name": "account_id",
+				"type": "INT_32"
+			},
+			{
+				"name": "customer_name",
+				"type": "UTF8"
+			},
+			{
+				"name": "total_revenue",
+				"type": "DOUBLE"
+			},
+			{
+				"name": "total_orders",
+				"type": "INT_64"
+			}
+		]
+	}
+}
