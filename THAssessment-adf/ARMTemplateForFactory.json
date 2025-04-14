@@ -181,6 +181,30 @@
 												"sf_tablename": {
 													"value": "@toUpper(item().name)",
 													"type": "Expression"
+												},
+												"Account_name": {
+													"value": "@pipeline().parameters.metadata_values.sf_account_name",
+													"type": "Expression"
+												},
+												"Database": {
+													"value": "@pipeline().parameters.metadata_values.sf_database_name",
+													"type": "Expression"
+												},
+												"Warehouse": {
+													"value": "@pipeline().parameters.metadata_values.sf_warehouse_name",
+													"type": "Expression"
+												},
+												"User_name": {
+													"value": "@pipeline().parameters.metadata_values.sf_user_name",
+													"type": "Expression"
+												},
+												"Secret_name": {
+													"value": "@pipeline().parameters.metadata_values.sf_password",
+													"type": "Expression"
+												},
+												"Role": {
+													"value": "@pipeline().parameters.metadata_values.sf_role",
+													"type": "Expression"
 												}
 											}
 										}
@@ -1595,6 +1619,85 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/ds_SnowflakeTable')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_snowflake",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"Account_name": {
+							"value": "@dataset().Account_name",
+							"type": "Expression"
+						},
+						"Database": {
+							"value": "@dataset().Database",
+							"type": "Expression"
+						},
+						"Warehouse": {
+							"value": "@dataset().Warehouse",
+							"type": "Expression"
+						},
+						"User_name": {
+							"value": "@dataset().User_name",
+							"type": "Expression"
+						},
+						"Secret_name": {
+							"value": "@dataset().Secret_name",
+							"type": "Expression"
+						},
+						"Role": {
+							"value": "@dataset().Role",
+							"type": "Expression"
+						}
+					}
+				},
+				"parameters": {
+					"sf_tablename": {
+						"type": "string"
+					},
+					"Account_name": {
+						"type": "string",
+						"defaultValue": "cz75514.uae-north.azure"
+					},
+					"Database": {
+						"type": "string",
+						"defaultValue": "parch_and_posey"
+					},
+					"Warehouse": {
+						"type": "string",
+						"defaultValue": "THASSESSMENT_WH"
+					},
+					"User_name": {
+						"type": "string",
+						"defaultValue": "SALAHKHAN"
+					},
+					"Secret_name": {
+						"type": "string",
+						"defaultValue": "sf-password"
+					},
+					"Role": {
+						"type": "string",
+						"defaultValue": "ACCOUNTADMIN"
+					}
+				},
+				"annotations": [],
+				"type": "SnowflakeV2Table",
+				"schema": [],
+				"typeProperties": {
+					"schema": "THA",
+					"table": {
+						"value": "@dataset().sf_tablename",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_snowflake')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/ds_adls_gold_parquet')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -2003,43 +2106,6 @@
 				"typeProperties": {}
 			},
 			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/ds_SnowflakeTable')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "ls_snowflake",
-					"type": "LinkedServiceReference",
-					"parameters": {
-						"Account_name": "cz75514.uae-north.azure",
-						"Database": "parch_and_posey",
-						"Warehouse": "THASSESSMENT_WH",
-						"User_name": "SALAHKHAN",
-						"Secret_name": "sf-password",
-						"Role": "ACCOUNTADMIN"
-					}
-				},
-				"parameters": {
-					"sf_tablename": {
-						"type": "string"
-					}
-				},
-				"annotations": [],
-				"type": "SnowflakeV2Table",
-				"schema": [],
-				"typeProperties": {
-					"schema": "THA",
-					"table": {
-						"value": "@dataset().sf_tablename",
-						"type": "Expression"
-					}
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/ls_snowflake')]"
-			]
 		}
 	]
 }
