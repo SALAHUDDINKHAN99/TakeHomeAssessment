@@ -1,0 +1,45 @@
+{
+	"name": "ds_adls_gold_parquet",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"gold_dir": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": {
+					"value": "@dataset().gold_dir",
+					"type": "Expression"
+				},
+				"fileSystem": "gold"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": [
+			{
+				"name": "account_id",
+				"type": "INT_32"
+			},
+			{
+				"name": "name",
+				"type": "UTF8"
+			},
+			{
+				"name": "total_gloss_qty_purchased",
+				"type": "INT_64"
+			},
+			{
+				"name": "total_gloss_amount_usd",
+				"type": "DOUBLE"
+			}
+		]
+	}
+}
