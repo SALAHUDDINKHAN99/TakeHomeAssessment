@@ -185,6 +185,109 @@
 											}
 										}
 									]
+								},
+								{
+									"name": "Log DWH Ingestion Failure",
+									"type": "DatabricksNotebook",
+									"dependsOn": [
+										{
+											"activity": "Copy Tables From Gold To DWH",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+										"baseParameters": {
+											"loadId": {
+												"value": "@pipeline()?.TriggeredByPipelineRunId",
+												"type": "Expression"
+											},
+											"logTimeStamp": {
+												"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+												"type": "Expression"
+											},
+											"status": {
+												"value": "@concat('ERROR : ',activity('Copy Tables From Gold To DWH').Error.message)",
+												"type": "Expression"
+											},
+											"logMessage": {
+												"value": "@concat('Failed to ingest denormalized reporting ready table \"',item().name,'\" into SNOWFLAKE DWH.')",
+												"type": "Expression"
+											},
+											"pipeLineName": {
+												"value": "@pipeline().Pipeline",
+												"type": "Expression"
+											},
+											"triggerType": {
+												"value": "@pipeline().TriggerType",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_databricks",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "Log DWH Ingestion Success",
+									"type": "DatabricksNotebook",
+									"dependsOn": [
+										{
+											"activity": "Copy Tables From Gold To DWH",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/DatabricksNotebooks/Insertion_Scripts/log_record_insertion",
+										"baseParameters": {
+											"loadId": {
+												"value": "@pipeline()?.TriggeredByPipelineRunId",
+												"type": "Expression"
+											},
+											"logTimeStamp": {
+												"value": "@convertFromUtc(utcNow(), 'India Standard Time', 'yyyy-MM-dd HH:mm:ss')",
+												"type": "Expression"
+											},
+											"status": "Success!",
+											"logMessage": {
+												"value": "@concat('Successfully ingested denormalized reporting ready table \"',item().name,'\" into SNOWFLAKE DWH.')",
+												"type": "Expression"
+											},
+											"pipeLineName": {
+												"value": "@pipeline().Pipeline",
+												"type": "Expression"
+											},
+											"triggerType": {
+												"value": "@pipeline().TriggerType",
+												"type": "Expression"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_databricks",
+										"type": "LinkedServiceReference"
+									}
 								}
 							]
 						}
@@ -203,6 +306,7 @@
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/ds_adls_gold_parquet')]",
 				"[concat(variables('factoryId'), '/datasets/ds_SnowflakeTable')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_databricks')]",
 				"[concat(variables('factoryId'), '/linkedServices/ls_blob')]"
 			]
 		},
