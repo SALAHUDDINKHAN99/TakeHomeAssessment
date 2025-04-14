@@ -1,0 +1,108 @@
+{
+	"name": "pipeline4",
+	"properties": {
+		"activities": [
+			{
+				"name": "LU_Get_Metadata",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureDatabricksDeltaLakeSource",
+						"query": {
+							"value": "@concat(\n  'SELECT so.source_ref, so.mysql_server_name, so.mysql_port, so.mysql_database_name, so.mysql_user_name, so.mysql_password ,so.container_name, so.adls_url, so.sf_account_name, so.sf_database_name, so.sf_warehouse_name, so.sf_user_name, so.sf_password, so.sf_role, so.logic_app_url, so.email_id, so.storage_account_name, si.source_table_name,si.sink_directory,si.bronze_schema,si.bronze_tbl,si.silver_schema,si.silver_tbl,si.gold_schema FROM ',\n  pipeline().parameters.metadata_schema,\n  '.tbl_source_parameters so JOIN ',\n  pipeline().parameters.metadata_schema,\n  '.tbl_sink_parameters si ON so.source_ref = si.source_ref WHERE so.source_ref = ''',\n  pipeline().parameters.source_ref,\n  ''''\n)\n",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "ds_metadata_deltaLake",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "Copy data1",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "LU_Get_Metadata",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "ParquetSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "ParquetReadSettings"
+						}
+					},
+					"sink": {
+						"type": "SnowflakeV2Sink",
+						"importSettings": {
+							"type": "SnowflakeImportCopyCommand"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "ds_gold_adls",
+						"type": "DatasetReference",
+						"parameters": {
+							"table_name": "top_customers_by_revenue"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "ds_snowflake",
+						"type": "DatasetReference",
+						"parameters": {
+							"Account_name": "cz75514.uae-north.azure",
+							"Database": "parch_and_posey",
+							"Warehouse": "THASSESSMENT_WH",
+							"User_name": "SALAHKHAN",
+							"Secret_name": "sf-password",
+							"Role": "ACCOUNTADMIN"
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"metadata_schema": {
+				"type": "string",
+				"defaultValue": "metadatadb"
+			},
+			"source_ref": {
+				"type": "string",
+				"defaultValue": "MySQL-onPrem"
+			}
+		},
+		"annotations": []
+	}
+}

@@ -55,14 +55,26 @@
 			"Role": {
 				"type": "string",
 				"defaultValue": "ACCOUNTADMIN"
+			},
+			"sf_schema": {
+				"type": "string"
+			},
+			"sf_table": {
+				"type": "string"
 			}
 		},
 		"annotations": [],
 		"type": "SnowflakeV2Table",
 		"schema": [],
 		"typeProperties": {
-			"schema": "THA",
-			"table": "ORDERS"
+			"schema": {
+				"value": "@dataset().sf_schema",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().sf_table",
+				"type": "Expression"
+			}
 		}
 	},
 	"type": "Microsoft.DataFactory/factories/datasets"
