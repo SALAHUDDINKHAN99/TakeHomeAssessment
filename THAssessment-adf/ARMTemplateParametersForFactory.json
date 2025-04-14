@@ -1,0 +1,39 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "THAssessment-adf"
+		},
+		"ls_adls_accountKey": {
+			"value": ""
+		},
+		"ls_adls_properties_typeProperties_url": {
+			"value": "https://thassessmentsa.dfs.core.windows.net/"
+		},
+		"ls_blob_sasUri": {
+			"value": ""
+		},
+		"ls_databricks_properties_typeProperties_existingClusterId": {
+			"value": "0410-200009-9p8temjy"
+		},
+		"ls_keyVault_properties_typeProperties_baseUrl": {
+			"value": "https://THAKeyVault.vault.azure.net/"
+		},
+		"ls_mySql_properties_typeProperties_server": {
+			"value": "@{linkedService().Server_name}"
+		},
+		"ls_mySql_properties_typeProperties_database": {
+			"value": "@{linkedService().Database_name}"
+		},
+		"ls_mySql_properties_typeProperties_username": {
+			"value": "@{linkedService().User_name}"
+		},
+		"ls_snowflake_properties_typeProperties_database": {
+			"value": "@{linkedService().Database}"
+		},
+		"ls_snowflake_properties_typeProperties_role": {
+			"value": "@{linkedService().Role}"
+		}
+	}
+}
