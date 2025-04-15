@@ -392,7 +392,7 @@
 										"type": "Expression"
 									},
 									"source_table_name": {
-										"value": "@item().source_table_namee",
+										"value": "@item().source_table_name",
 										"type": "Expression"
 									},
 									"storage_account_name": {
