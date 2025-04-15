@@ -537,6 +537,37 @@
 									}
 								}
 							}
+						},
+						{
+							"name": "copy_source_files_failed_email_alert",
+							"type": "WebActivity",
+							"dependsOn": [
+								{
+									"activity": "Copy mysql tables to Landing",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"method": "POST",
+								"url": {
+									"value": "@item().logic_app_url",
+									"type": "Expression"
+								},
+								"body": {
+									"value": "{\n    \"to\":\"@{item().email_id}\",\n    \"subject\":\" @{concat(pipeline().Pipeline,' [Source Tables Copy Failed]')}\",\n    \"email_body\":\"\n<!DOCTYPE html>\n<html>\n<body>\n    Hi all,<br>\n    Please find below the status for pipeline:\n    <span style='color:#004085; background-color:#CCE5FF;'>@{pipeline().Pipeline}</span><br><br><br>\n    <table>\n        <tr>\n            <th style='text-align: left;'>Parameters</th>\n            <th style='text-align: left;'>Value</th>\n        </tr>\n        <tr>\n            <td>Source Reference :</td>\n            <td>@{pipeline().parameters.source_ref}</td>\n        </tr>\n        <tr>\n            <td>Status :</td>\n            <td><span style='color:#721C24; background-color:#F8D7DA;'>Failed</span></td>\n        </tr>\n        <tr>\n            <td>TriggerType :</td>\n            <td>@{pipeline().TriggerType}</td>\n        </tr>\n        <tr>\n            <td>Load ID :</td>\n            <td>@{pipeline().RunId}</td>\n        </tr>\n        <tr>\n            <td>Job Start Time :</td>\n            <td>@{variables('start_time')} IST</td>\n        </tr>\n        <tr>\n            <td>Table Name :</td>\n            <td>@{item().source_table_name}</td>\n        </tr>\n        <tr>\n            <td>Error :</td>\n            <td>@{activity('Copy mysql tables to Landing').Error.message} IST</td>\n        </tr>\n    </table><br><br><br>\n    <p>\n        SALAHUDDIN KHAN <br>\n        Data Engineer <br>\n        e-mail: salahkhan.official@gmail.com\n    </p>\n</body>\n</html>\n\"\n}",
+									"type": "Expression"
+								}
+							}
 						}
 					]
 				}
