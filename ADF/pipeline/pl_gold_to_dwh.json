@@ -239,7 +239,7 @@
 									},
 									"status": "Success!",
 									"logMessage": {
-										"value": "@concat('Successfully ingested denormalized reporting ready table \"',item().name,'\" into SNOWFLAKE DWH.')",
+										"value": "@concat('Successfully ingested ',activity('Copy Tables From Gold To DWH').output.rowsCopied,' records out of ',activity('Copy Tables From Gold To DWH').output.rowsRead,' available into denormalized reporting ready table \"',item().name,'\" in the SNOWFLAKE DWH.')",
 										"type": "Expression"
 									},
 									"pipeLineName": {
