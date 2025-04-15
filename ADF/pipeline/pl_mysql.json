@@ -773,7 +773,7 @@
 				}
 			},
 			{
-				"name": "pipeline_in_progress_email",
+				"name": "pipeline_in_progress_email_alert",
 				"type": "WebActivity",
 				"dependsOn": [
 					{
@@ -799,6 +799,68 @@
 					},
 					"body": {
 						"value": "{\n    \"to\":\"@{activity('LU_Get_Metadata').output.value[0].email_id}\",\n    \"subject\":\" @{concat(pipeline().Pipeline,' [InProgress]')}\",\n    \"email_body\":\"\n<!DOCTYPE html>\n<html>\n<body>\n    Hi all,<br>\n    Please find below the status for pipeline:\n    <span style='color:#004085; background-color:#CCE5FF;'>@{pipeline().Pipeline}</span><br><br><br>\n    <table>\n        <tr>\n            <th style='text-align: left;'>Parameters</th>\n            <th style='text-align: left;'>Value</th>\n        </tr>\n        <tr>\n            <td>Source Reference :</td>\n            <td>@{pipeline().parameters.source_ref}</td>\n        </tr>\n        <tr>\n            <td>Status :</td>\n            <td><span style='color:#856404; background-color:#FFF3CD;'>In Progress</span></td>\n        </tr>\n        <tr>\n            <td>TriggerType :</td>\n            <td>@{pipeline().TriggerType}</td>\n        </tr>\n        <tr>\n            <td>Load ID :</td>\n            <td>@{pipeline().RunId}</td>\n        </tr>\n        <tr>\n            <td>Job Start Time :</td>\n            <td>@{variables('start_time')} IST</td>\n        </tr>\n    </table><br><br><br>\n    <p>\n        SALAHUDDIN KHAN <br>\n        Data Engineer <br>\n        e-mail: salahkhan.official@gmail.com\n    </p>\n</body>\n</html>\n\"\n}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "pipeline_ended_success_email_alert",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Execute pl_gold_to_dwh",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"url": {
+						"value": "@activity('LU_Get_Metadata').output.value[0].logic_app_url",
+						"type": "Expression"
+					},
+					"body": {
+						"value": "{\n    \"to\":\"@{activity('LU_Get_Metadata').output.value[0].email_id}\",\n    \"subject\":\" @{concat(pipeline().Pipeline,' [Ended]')}\",\n    \"email_body\":\"\n<!DOCTYPE html>\n<html>\n<body>\n    Hi all,<br>\n    Please find below the status for pipeline:\n    <span style='color:#004085; background-color:#CCE5FF;'>@{pipeline().Pipeline}</span><br><br><br>\n    <table>\n        <tr>\n            <th style='text-align: left;'>Parameters</th>\n            <th style='text-align: left;'>Value</th>\n        </tr>\n        <tr>\n            <td>Source Reference :</td>\n            <td>@{pipeline().parameters.source_ref}</td>\n        </tr>\n        <tr>\n            <td>Status :</td>\n            <td><span style='color:#155724; background-color:#D4EDDA;'>Success</span></td>\n        </tr>\n        <tr>\n            <td>TriggerType :</td>\n            <td>@{pipeline().TriggerType}</td>\n        </tr>\n        <tr>\n            <td>Load ID :</td>\n            <td>@{pipeline().RunId}</td>\n        </tr>\n        <tr>\n            <td>Job End Time :</td>\n            <td>@{convertFromUtc(utcNow(), 'India Standard Time', 'dd-MM-yyyy HH:mm:ss')} IST</td> --\n        </tr>\n    </table><br><br><br>\n    <p>\n        SALAHUDDIN KHAN <br>\n        Data Engineer <br>\n        e-mail: salahkhan.official@gmail.com\n    </p>\n</body>\n</html>\n\"\n}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "pipeline_ended_failure_email_alert",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Execute pl_gold_to_dwh",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"url": {
+						"value": "@activity('LU_Get_Metadata').output.value[0].logic_app_url",
+						"type": "Expression"
+					},
+					"body": {
+						"value": "{\n    \"to\":\"@{activity('LU_Get_Metadata').output.value[0].email_id}\",\n    \"subject\":\" @{concat(pipeline().Pipeline,' [Ended]')}\",\n    \"email_body\":\"\n<!DOCTYPE html>\n<html>\n<body>\n    Hi all,<br>\n    Please find below the status for pipeline:\n    <span style='color:#004085; background-color:#CCE5FF;'>@{pipeline().Pipeline}</span><br><br><br>\n    <table>\n        <tr>\n            <th style='text-align: left;'>Parameters</th>\n            <th style='text-align: left;'>Value</th>\n        </tr>\n        <tr>\n            <td>Source Reference :</td>\n            <td>@{pipeline().parameters.source_ref}</td>\n        </tr>\n        <tr>\n            <td>Status :</td>\n            <td><span style='color:#721C24; background-color:#F8D7DA;'>Failed</span></td>\n        </tr>\n        <tr>\n            <td>TriggerType :</td>\n            <td>@{pipeline().TriggerType}</td>\n        </tr>\n        <tr>\n            <td>Load ID :</td>\n            <td>@{pipeline().RunId}</td>\n        </tr>\n        <tr>\n            <td>Job End Time :</td>\n            <td>@{convertFromUtc(utcNow(), 'India Standard Time', 'dd-MM-yyyy HH:mm:ss')} IST</td> --\n        </tr>\n    </table><br><br><br>\n    <p>\n        SALAHUDDIN KHAN <br>\n        Data Engineer <br>\n        e-mail: salahkhan.official@gmail.com\n    </p>\n</body>\n</html>\n\"\n}",
 						"type": "Expression"
 					}
 				}
