@@ -1,0 +1,45 @@
+{
+    "to":"@{activity('LU_Get_Metadata').output.value[0].email_id}",
+    "subject":" @{concat(pipeline().Pipeline,' [InProgress]')}",
+    "email_body":"
+<!DOCTYPE html>
+<html>
+<body>
+    Hi all,<br>
+    Please find below the status for pipeline:
+    <span style='color:#004085; background-color:#CCE5FF;'>@{pipeline().Pipeline}</span><br><br><br>
+    <table>
+        <tr>
+            <th style='text-align: left;'>Parameters</th>
+            <th style='text-align: left;'>Value</th>
+        </tr>
+        <tr>
+            <td>Source Reference :</td>
+            <td>@{pipeline().parameters.source_ref}</td>
+        </tr>
+        <tr>
+            <td>Status :</td>
+            <td><span style='color:#856404; background-color:#FFF3CD;'>In Progress</span></td>
+        </tr>
+        <tr>
+            <td>TriggerType :</td>
+            <td>@{pipeline().TriggerType}</td>
+        </tr>
+        <tr>
+            <td>Load ID :</td>
+            <td>@{pipeline().RunId}</td>
+        </tr>
+        <tr>
+            <td>Job Start Time :</td>
+            <td>@{variables('start_time')} IST</td>
+        </tr>
+    </table><br><br><br>
+    <p>
+        SALAHUDDIN KHAN <br>
+        Data Engineer <br>
+        e-mail: salahkhan.official@gmail.com
+    </p>
+</body>
+</html>
+"
+}
