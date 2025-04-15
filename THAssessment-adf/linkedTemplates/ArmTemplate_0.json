@@ -1425,6 +1425,12 @@
 								"dependencyConditions": [
 									"Succeeded"
 								]
+							},
+							{
+								"activity": "pipeline_start_time",
+								"dependencyConditions": [
+									"Succeeded"
+								]
 							}
 						],
 						"userProperties": [],
@@ -2135,6 +2141,55 @@
 							"referenceName": "ls_databricks",
 							"type": "LinkedServiceReference"
 						}
+					},
+					{
+						"name": "pipeline_start_time",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "start_time",
+							"value": {
+								"value": "@convertFromUtc(utcNow(),'India Standard Time','dd-MM-yyyy HH:mm:ss')",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "pipeline_in_progress_email",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "LU_Get_Metadata",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "POST",
+							"headers": {},
+							"url": {
+								"value": "@activity('LU_Get_Metadata').output.value[0].logic_app_url",
+								"type": "Expression"
+							},
+							"body": {
+								"value": "{\r\n    \"to\":\"@{activity('LU_Get_Metadata').output.value[0].email_id}\",\r\n    \"subject\":\" @{concat(pipeline().Pipeline,':[InProgress]')}\",\r\n    \"email_body\":\"\r\n   \r\n    <!DOCTYPE html>\r\n<html>\r\n<body>\r\n    Hi all,<br/>\r\n    Please find below the status for @{pipeline().Pipeline}<br/><br/>\r\n    \r\n    <table>\r\n        <tr>\r\n            <th style='text-align: left;'>Parameters</th>\r\n            <th style='text-align: left;'>Value</th>\r\n        </tr>\r\n        <tr>\r\n            <td>Source Reference : </td>\r\n            <td>@{pipeline().parameters.source_ref}</td>\r\n        </tr>\r\n        <tr>\r\n            <td>Status</td>\r\n            <td><span style='color:Red;background-color:yellow;'>In Progress</span></td>\r\n        </tr>\r\n        <tr>\r\n            <td>Scheduled</td>\r\n            <td>@{pipeline().TriggerType}</td>\r\n        </tr>\r\n        <tr>\r\n            <td>LoadID</td>\r\n            <td>@{pipeline().RunId}</td>\r\n        </tr>\r\n        <tr>\r\n            <td>JobStart</td>\r\n            <td>@{variables('start_time')}</td>\r\n        </tr>\r\n    </table><br/><br/><br/>\r\n    \r\n    <p>Salahuddin Khan</p>\r\n    <p>Data Engineer</p>\r\n</body>\r\n</html>\r\n    \"\r\n}",
+								"type": "Expression"
+							}
+						}
 					}
 				],
 				"policy": {
@@ -2148,6 +2203,11 @@
 					"source_ref": {
 						"type": "string",
 						"defaultValue": "MySQL-onPrem"
+					}
+				},
+				"variables": {
+					"start_time": {
+						"type": "String"
 					}
 				},
 				"annotations": [],
